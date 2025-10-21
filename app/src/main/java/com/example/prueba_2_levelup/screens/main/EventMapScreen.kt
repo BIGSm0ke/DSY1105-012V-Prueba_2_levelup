@@ -1,107 +1,120 @@
 package com.example.prueba_2_levelup.screens.main
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import android.content.Context // Necesario para Intent
+import android.content.Intent // Necesario para Intent
+import android.net.Uri // Necesario para Uri
+import android.widget.Toast // Para mensajes de error
+import androidx.compose.foundation.clickable // Para hacer clickeable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items // Necesario para LazyColumn items
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext // Para obtener el contexto
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.* // Importa las funciones de Google Maps Compose
+import com.google.android.gms.maps.model.LatLng // Aún usamos LatLng para los datos
 
-// Data class simple para representar un evento (puedes expandirla)
+// Data class simple para representar un evento (igual que antes)
 data class GameEvent(
     val id: String,
     val name: String,
     val location: LatLng,
-    val description: String? = null
+    val description: String? = null,
+    val address: String? = null // Opcional: Añadir dirección para el Intent
 )
 
-// Lista de eventos de ejemplo (en una app real, vendrían de una BD o API)
+// Lista de eventos de ejemplo (igual que antes, puedes añadir address)
 val sampleEvents = listOf(
-    GameEvent("evt1", "Torneo Gamer Fest", LatLng(-33.45694, -70.64827), "Gran torneo presencial"), // Santiago Centro (aprox)
-    GameEvent("evt2", "Expo Videojuegos Retro", LatLng(-33.4184, -70.6033), "Exhibición en Providencia"), // Providencia (aprox)
-    GameEvent("evt3", "Lanzamiento Nuevo Juego", LatLng(-33.3916, -70.5724), "Evento en Las Condes") // Las Condes (aprox)
+    GameEvent("evt1", "Torneo Gamer Fest", LatLng(-33.45694, -70.64827), "Gran torneo presencial", "Plaza de Armas, Santiago"),
+    GameEvent("evt2", "Expo Videojuegos Retro", LatLng(-33.4184, -70.6033), "Exhibición en Providencia", "Av. Providencia 123, Santiago"),
+    GameEvent("evt3", "Lanzamiento Nuevo Juego", LatLng(-33.3916, -70.5724), "Evento en Las Condes", "Av. Apoquindo 456, Las Condes")
 )
 
 @Composable
-fun EventMapScreen(
+fun EventMapScreen( // Podrías renombrarlo a EventListScreen si prefieres
     // Puedes añadir un ViewModel si necesitas lógica más compleja
-    // eventMapViewModel: EventMapViewModel = viewModel()
 ) {
-    // Estado para recordar la configuración de la cámara del mapa
-    // Centrado inicialmente en Santiago (puedes ajustar lat/lng y zoom)
-    val santiagoLatLng = LatLng(-33.4489, -70.6693)
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(santiagoLatLng, 10f) // Zoom inicial (10f es un buen nivel para ciudad)
-    }
+    val context = LocalContext.current // Obtenemos el contexto actual
 
-    // Propiedades y controles de UI para el mapa
-    var mapProperties by remember {
-        mutableStateOf(MapProperties(mapType = MapType.NORMAL)) // Puedes cambiar a SATELLITE, HYBRID, TERRAIN
-    }
-    val mapUiSettings by remember {
-        mutableStateOf(MapUiSettings(zoomControlsEnabled = true)) // Habilita controles de zoom
-    }
-
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(top = 16.dp, start = 16.dp, end = 16.dp) // Añade padding superior
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
-        Text("Eventos Gamer Cercanos", style = MaterialTheme.typography.headlineMedium)
+        Text("Próximos Eventos Gamer", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(16.dp))
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState,
-                properties = mapProperties,
-                uiSettings = mapUiSettings
-            ) {
-                // Añade marcadores para cada evento
-                sampleEvents.forEach { event ->
-                    Marker(
-                        state = MarkerState(position = event.location),
-                        title = event.name,
-                        snippet = event.description ?: "Evento Gamer" // Texto que aparece al tocar el marcador
-                        // Puedes personalizar el ícono del marcador aquí:
-                        // icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
-                    )
+        // Lista de eventos
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(8.dp) // Espacio entre items
+        ) {
+            items(sampleEvents) { event ->
+                EventListItem(event = event) { selectedEvent ->
+                    // Acción al hacer click: Abrir mapa externo
+                    openMapForEvent(context, selectedEvent)
                 }
-
-                // Opcional: Marcador para la ubicación actual del usuario
-                // Necesitarías obtener la ubicación del dispositivo (requiere más lógica y permisos)
-                // val userLocation = LatLng(...)
-                // Marker(state = MarkerState(position = userLocation), title = "Tu ubicación")
-            }
-
-            // Opcional: Muestra un indicador de carga mientras el mapa se inicializa
-            if (!cameraPositionState.isMoving && cameraPositionState.position.target == santiagoLatLng) { // Condición simple de carga
-                // CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                Divider() // Línea divisoria
             }
         }
     }
 }
 
+// Composable para mostrar cada item de la lista de eventos
+@Composable
+fun EventListItem(event: GameEvent, onClick: (GameEvent) -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick(event) } // Hace toda la columna clickeable
+            .padding(vertical = 12.dp)
+    ) {
+        Text(event.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+        event.description?.let {
+            Text(it, style = MaterialTheme.typography.bodyMedium)
+        }
+        event.address?.let {
+            Text("Dirección: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        // Podrías mostrar lat/lng si quieres:
+        // Text("Coords: ${event.location.latitude}, ${event.location.longitude}", style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+// Función auxiliar para crear y lanzar el Intent del mapa
+fun openMapForEvent(context: Context, event: GameEvent) {
+    // Intenta crear una URI geo con latitud y longitud + un marcador con el nombre
+    val gmmIntentUri = Uri.parse("geo:${event.location.latitude},${event.location.longitude}?q=${Uri.encode(event.name)}")
+
+    // Alternativa: Si tienes dirección, puedes intentar buscarla (puede ser menos preciso)
+    // val gmmIntentUri = Uri.parse("geo:0,0?q=${Uri.encode(event.address ?: event.name)}")
+
+    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+    // Opcional: Especificar el paquete de Google Maps si quieres forzarlo,
+    // pero es mejor dejar que el usuario elija su app de mapas preferida.
+    // mapIntent.setPackage("com.google.android.apps.maps")
+
+    try {
+        // Verifica si hay alguna aplicación que pueda manejar este Intent
+        if (mapIntent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(mapIntent)
+        } else {
+            Toast.makeText(context, "No se encontró una aplicación de mapas.", Toast.LENGTH_LONG).show()
+        }
+    } catch (e: Exception) {
+        Toast.makeText(context, "Error al intentar abrir el mapa.", Toast.LENGTH_LONG).show()
+    }
+}
+
+
 // --- Preview (Opcional) ---
 /*
 @Preview(showBackground = true)
 @Composable
-fun EventMapScreenPreview() {
+fun EventListScreenPreview() {
     Prueba_2_levelupTheme {
-        // La preview del mapa puede no funcionar directamente en el editor
-        // Es mejor probarla en un emulador o dispositivo real.
-        Box(modifier = Modifier.fillMaxSize()) {
-             Text("Vista previa del mapa no disponible en el editor.", modifier = Modifier.align(Alignment.Center))
-        }
+        EventMapScreen() // Renombrar si cambiaste el nombre
     }
 }
 */
