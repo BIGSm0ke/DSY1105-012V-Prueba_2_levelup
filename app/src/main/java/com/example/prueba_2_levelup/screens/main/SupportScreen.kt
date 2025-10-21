@@ -6,7 +6,8 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Info // Ícono de información
+import androidx.compose.material.icons.filled.Send // Ícono alternativo
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,81 +17,69 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun SupportScreen(
-    // Puedes añadir un ViewModel si necesitas lógica adicional
-) {
+fun SupportScreen() {
     val context = LocalContext.current
-    // IMPORTANTE: Reemplaza este número con el número de teléfono real de soporte, incluyendo código de país (ej. 569 para Chile Mobile)
-    val supportPhoneNumber = "56912345678" // Ejemplo para Chile +56 9 1234 5678
+    // IMPORTANTE: Reemplaza este número!
+    val supportPhoneNumber = "56912345678" // Incluye código de país
 
+    // Fondo negro, texto blanco por el tema
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(32.dp), // Más padding general
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center // Centra el contenido
+        verticalArrangement = Arrangement.Center
     ) {
+        // Ícono grande Verde Neón
         Icon(
-            Icons.Filled.Info, // O usa un ícono específico de soporte/chat
+            Icons.Filled.Info, // O Icons.Filled.SupportAgent, etc.
             contentDescription = "Soporte",
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary
+            modifier = Modifier.size(80.dp), // Más grande
+            tint = MaterialTheme.colorScheme.secondary // Verde Neón
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
+        // Título con Orbitron
         Text(
             "Soporte Técnico",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium // Orbitron
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
+        // Texto con Roboto Regular, Gris Claro
         Text(
             "¿Necesitas ayuda? Contáctanos directamente a través de WhatsApp.",
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant // Gris Claro
         )
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(40.dp))
 
+        // Botón Azul Eléctrico
         Button(
             onClick = {
                 openWhatsAppChat(context, supportPhoneNumber)
             },
-            modifier = Modifier.fillMaxWidth(0.8f) // Botón un poco más angosto
+            modifier = Modifier.fillMaxWidth(0.9f), // Un poco más ancho
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary) // Azul
         ) {
-            // Icon(Icons.Filled.Call, contentDescription = "WhatsApp Icon") // Reemplaza con ícono de WhatsApp si lo tienes
-            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-            Text("Contactar por WhatsApp")
+            // Icon(Icons.Filled.Send, contentDescription = "WhatsApp") // Ícono opcional
+            // Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+            // Texto del botón Blanco
+            Text("Contactar por WhatsApp", style = MaterialTheme.typography.labelLarge)
         }
     }
 }
 
-// Función auxiliar para abrir WhatsApp
+// Función auxiliar para abrir WhatsApp (sin cambios)
 fun openWhatsAppChat(context: Context, phoneNumber: String) {
     val url = "https://api.whatsapp.com/send?phone=$phoneNumber"
     try {
-        // Crea el Intent para abrir la URL de WhatsApp
         val intent = Intent(Intent.ACTION_VIEW).apply {
             data = Uri.parse(url)
-            // Opcional: Especificar el paquete para asegurar que se abra WhatsApp si está instalado
-            // setPackage("com.whatsapp")
         }
         context.startActivity(intent)
     } catch (e: Exception) {
-        // Manejo de error si WhatsApp no está instalado o hay otro problema
         Toast.makeText(context, "No se pudo abrir WhatsApp. ¿Está instalado?", Toast.LENGTH_LONG).show()
-        // O podrías intentar abrir la URL en un navegador como alternativa:
-        // val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$phoneNumber"))
-        // context.startActivity(webIntent)
     }
 }
-
-// --- Preview (Opcional) ---
-/*
-@Preview(showBackground = true)
-@Composable
-fun SupportScreenPreview() {
-    Prueba_2_levelupTheme {
-        SupportScreen()
-    }
-}
-*/

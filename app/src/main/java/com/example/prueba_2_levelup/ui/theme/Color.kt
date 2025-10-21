@@ -2,10 +2,9 @@ package com.example.prueba_2_levelup.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
-
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Paleta de Level-Up Gamer
+val LevelUpBlack = Color(0xFF000000)         // Fondo Principal
+val LevelUpElectricBlue = Color(0xFF1E90FF) // Acento 1 (Botones, interactivos)
+val LevelUpNeonGreen = Color(0xFF39FF14)    // Acento 2 (Botones, interactivos)
+val LevelUpWhite = Color(0xFFFFFFFF)         // Texto Principal
+val LevelUpLightGray = Color(0xFFD3D3D3)    // Texto Secundario
