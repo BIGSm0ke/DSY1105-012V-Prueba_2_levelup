@@ -7,6 +7,7 @@ import com.example.prueba_2_levelup.data.entities.CartItemEntity
 import com.example.prueba_2_levelup.data.entities.ProductEntity
 import com.example.prueba_2_levelup.data.entities.UserEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull // Importar para obtener el valor del Flow
 
 // Repositorio centraliza el acceso a los DAOs
 class UserRepository(
@@ -39,10 +40,25 @@ class UserRepository(
             cartDao.insertCartItem(CartItemEntity(productId = productId, quantity = quantity))
         }
     }
-    suspend fun updateCartItemQuantity(itemId: Int, newQuantity: Int) {
-        val item = cartDao.getCartItemsWithProductInfo(). // Need to fetch the item first (or add a getById method)
 
+    // --- CORRECCIÓN AQUÍ ---
+    suspend fun updateCartItemQuantity(itemId: Int, newQuantity: Int) {
+        // Necesitamos una función en CartDao para obtener un item por su ID
+        // Asumamos que creamos: suspend fun getCartItemById(id: Int): CartItemEntity?
+        val item = cartDao.getCartItemById(itemId) // Llama a la nueva función (que debes crear en CartDao)
+        if (item != null) {
+            if (newQuantity > 0) {
+                item.quantity = newQuantity
+                cartDao.updateCartItem(item) // Actualiza el item en la BD
+            } else {
+                // Si la nueva cantidad es 0 o menos, eliminamos el item
+                removeFromCart(itemId)
+            }
+        }
+        // Puedes añadir manejo de errores si item es null
     }
+    // --- FIN CORRECCIÓN ---
+
     suspend fun removeFromCart(itemId: Int) = cartDao.deleteCartItemById(itemId)
     fun getCartItems() = cartDao.getCartItemsWithProductInfo() // Usar el que trae info del producto
     suspend fun clearCart() = cartDao.clearCart()

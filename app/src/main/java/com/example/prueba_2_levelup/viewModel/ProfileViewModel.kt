@@ -1,5 +1,7 @@
 package com.example.prueba_2_levelup.viewModel
 
+
+import kotlinx.coroutines.flow.flow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.prueba_2_levelup.data.UserRepository
@@ -63,4 +65,3 @@ class ProfileViewModel(
 }
 
 // Necesitarás importar kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flow
