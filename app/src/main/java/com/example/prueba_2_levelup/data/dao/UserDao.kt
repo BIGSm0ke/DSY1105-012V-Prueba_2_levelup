@@ -8,8 +8,8 @@ import com.example.prueba_2_levelup.data.entities.UserEntity
 
 @Dao
 interface UserDao {
-    @Insert(onConflict = OnConflictStrategy.IGNORE) // Ignorar si el correo ya existe
-    suspend fun insertUser(user: UserEntity)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertUser(user: UserEntity): Long
 
     @Query("SELECT * FROM users WHERE correo = :correo LIMIT 1")
     suspend fun getUserByEmail(correo: String): UserEntity? // Para verificar si existe al registrar

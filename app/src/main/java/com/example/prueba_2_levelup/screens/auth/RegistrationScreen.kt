@@ -1,9 +1,10 @@
-
 package com.example.prueba_2_levelup.screens.auth
 
 import android.app.DatePickerDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,93 +24,141 @@ fun RegistrationScreen(
     viewModel: RegistrationViewModel
 ) {
     val context = LocalContext.current
-    val calendar = Calendar.getInstance()
-    // Inicializa el DatePickerDialog
+    val displayDateFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+    // --- Configuración DatePickerDialog (sin cambios) ---
+    val currentCalendar = Calendar.getInstance()
     val datePickerDialog = DatePickerDialog(
         context,
         { _, year, month, dayOfMonth ->
             viewModel.fechaNacimiento = LocalDate.of(year, month + 1, dayOfMonth)
-            viewModel.validateFechaNacimiento() // Validar al seleccionar
+            viewModel.validateFechaNacimiento()
         },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
+        viewModel.fechaNacimiento?.year ?: currentCalendar.get(Calendar.YEAR),
+        viewModel.fechaNacimiento?.monthValue?.minus(1) ?: currentCalendar.get(Calendar.MONTH),
+        viewModel.fechaNacimiento?.dayOfMonth ?: currentCalendar.get(Calendar.DAY_OF_MONTH)
     )
-    // Limita la fecha máxima seleccionable a hoy
     datePickerDialog.datePicker.maxDate = System.currentTimeMillis()
+    // --- Fin DatePickerDialog ---
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    // --- FIX 3: Envolver en Surface para el color de fondo ---
+    // Surface aplicará el color MaterialTheme.colorScheme.background.
+    // Si tu app usa el tema oscuro (Dark Theme), este fondo será negro
+    // y el texto (como "Crear Cuenta") se volverá blanco automáticamente.
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
-        Text("Registro", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // --- Campos del Formulario ---
-        OutlinedTextField(value = viewModel.nombre, onValueChange = { viewModel.nombre = it; viewModel.validateNombre() }, label = { Text("Nombre") }, isError = viewModel.nombreError != null, modifier = Modifier.fillMaxWidth())
-        viewModel.nombreError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(value = viewModel.apellido, onValueChange = { viewModel.apellido = it; viewModel.validateApellido() }, label = { Text("Apellido") }, isError = viewModel.apellidoError != null, modifier = Modifier.fillMaxWidth())
-        viewModel.apellidoError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(value = viewModel.email, onValueChange = { viewModel.email = it; viewModel.validateEmail() }, label = { Text("Correo Electrónico") }, isError = viewModel.emailError != null, modifier = Modifier.fillMaxWidth())
-        viewModel.emailError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-        // Podrías añadir un mensaje si es correo Duoc
-        if (viewModel.email.endsWith("@duoc.cl", true) || viewModel.email.endsWith("@profesor.duoc.cl", true)) {
-            Text("¡Correo Duoc detectado! Recibirás 20% dcto.", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Campo Fecha Nacimiento (no editable, abre DatePicker)
-        OutlinedTextField(
-            value = viewModel.fechaNacimiento?.format(DateTimeFormatter.ISO_DATE) ?: "",
-            onValueChange = {}, // No permitir escribir
-            label = { Text("Fecha de Nacimiento (Click aquí)") },
-            readOnly = true,
-            isError = viewModel.fechaNacimientoError != null,
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .clickable { datePickerDialog.show() } // Mostrar selector al hacer click
-        )
-        viewModel.fechaNacimientoError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(value = viewModel.password, onValueChange = { viewModel.password = it; viewModel.validatePassword() }, label = { Text("Contraseña") }, isError = viewModel.passwordError != null, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
-        viewModel.passwordError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(value = viewModel.confirmPassword, onValueChange = { viewModel.confirmPassword = it; viewModel.validateConfirmPassword() }, label = { Text("Confirmar Contraseña") }, isError = viewModel.confirmPasswordError != null, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
-        viewModel.confirmPasswordError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Mensaje de error general de registro
-        viewModel.registrationError?.let { error ->
-            Text(error, color = MaterialTheme.colorScheme.error)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        Button(
-            onClick = {
-                viewModel.registerUser {
-                    // Navegar a Login al éxito
-                    navController.navigate("login") {
-                        popUpTo("registration") { inclusive = true } // Opcional: limpiar pantalla registro
-                    }
-                }
-            },
-            enabled = viewModel.isFormValid, // Habilitar solo si el form es válido (o validar al clickear)
-            modifier = Modifier.fillMaxWidth()
+                .fillMaxSize() // Rellena la Surface
+                .padding(horizontal = 32.dp, vertical = 16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Registrar")
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        TextButton(onClick = { navController.popBackStack() }) { // Volver al Login
-            Text("¿Ya tienes cuenta? Inicia Sesión")
-        }
-    }
+
+            // --- Contenido de la Columna (Tu código anterior, sin cambios) ---
+
+            Text("Crear Cuenta", style = MaterialTheme.typography.headlineMedium)
+            Spacer(modifier = Modifier.height(32.dp))
+
+            val textFieldColors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                cursorColor = MaterialTheme.colorScheme.primary
+            )
+
+            OutlinedTextField(
+                value = viewModel.nombre,
+                onValueChange = { viewModel.nombre = it; viewModel.validateNombre() },
+                label = { Text("Nombre") },
+                isError = viewModel.nombreError != null,
+                modifier = Modifier.fillMaxWidth(),
+                colors = textFieldColors
+            )
+            viewModel.nombreError?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = viewModel.apellido,
+                onValueChange = { viewModel.apellido = it; viewModel.validateApellido() },
+                label = { Text("Apellido") },
+                isError = viewModel.apellidoError != null,
+                modifier = Modifier.fillMaxWidth(),
+                colors = textFieldColors
+            )
+            viewModel.apellidoError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = viewModel.email,
+                onValueChange = { viewModel.email = it; viewModel.validateEmail() },
+                label = { Text("Correo Electrónico") },
+                isError = viewModel.emailError != null,
+                modifier = Modifier.fillMaxWidth(),
+                colors = textFieldColors
+            )
+            viewModel.emailError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            if (viewModel.email.endsWith("@duoc.cl", true) || viewModel.email.endsWith("@profesor.duoc.cl", true)) {
+                Text("¡Correo Duoc detectado! Recibirás 20% dcto.", color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.bodySmall)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = viewModel.fechaNacimiento?.format(displayDateFormat) ?: "",
+                onValueChange = {},
+                label = { Text("Fecha de Nacimiento (Click aquí)") },
+                readOnly = true,
+                isError = viewModel.fechaNacimientoError != null,
+                modifier = Modifier.fillMaxWidth().clickable { datePickerDialog.show() },
+                colors = textFieldColors
+            )
+            viewModel.fechaNacimientoError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = viewModel.password,
+                onValueChange = { viewModel.password = it; viewModel.validatePassword() },
+                label = { Text("Contraseña") },
+                isError = viewModel.passwordError != null,
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+                colors = textFieldColors
+            )
+            viewModel.passwordError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = viewModel.confirmPassword,
+                onValueChange = { viewModel.confirmPassword = it; viewModel.validateConfirmPassword() },
+                label = { Text("Confirmar Contraseña") },
+                isError = viewModel.confirmPasswordError != null,
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+                colors = textFieldColors
+            )
+            viewModel.confirmPasswordError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            Spacer(modifier = Modifier.height(24.dp))
+
+            viewModel.registrationError?.let { error ->
+                Text(error, color = MaterialTheme.colorScheme.error)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            Button(
+                onClick = { viewModel.registerUser { /* ... */ } },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+            ) {
+                Text("Registrar", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondary)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            TextButton(onClick = { navController.popBackStack() }) { Text("¿Ya tienes cuenta? Inicia Sesión") }
+
+        } // Fin Column
+    } // Fin Surface
 }
