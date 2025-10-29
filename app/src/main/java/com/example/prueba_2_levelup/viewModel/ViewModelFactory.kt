@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.prueba_2_levelup.data.UserRepository
 import com.example.prueba_2_levelup.util.PreferencesManager
+import com.example.prueba_2_levelup.viewModel.ProductManagementViewModel
 
 // Esta clase sabe cómo crear tus ViewModels específicos
 class ViewModelFactory(
@@ -25,6 +26,7 @@ class ViewModelFactory(
             modelClass.isAssignableFrom(CatalogViewModel::class.java) -> {
                 CatalogViewModel(userRepository) as T
             }
+
             // Si se pide un CartViewModel...
             modelClass.isAssignableFrom(CartViewModel::class.java) -> {
                 CartViewModel(userRepository) as T
@@ -32,6 +34,9 @@ class ViewModelFactory(
             // Si se pide un ProfileViewModel...
             modelClass.isAssignableFrom(ProfileViewModel::class.java) -> {
                 ProfileViewModel(userRepository, preferencesManager) as T
+            }
+            modelClass.isAssignableFrom(ProductManagementViewModel::class.java) -> {
+                ProductManagementViewModel(userRepository) as T
             }
             // Si no es ninguno de los anteriores, lanza una excepción
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

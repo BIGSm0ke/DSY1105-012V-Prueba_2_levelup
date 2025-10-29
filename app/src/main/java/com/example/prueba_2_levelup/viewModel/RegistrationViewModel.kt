@@ -69,10 +69,15 @@ class RegistrationViewModel(private val userRepository: UserRepository) : ViewMo
         return Period.between(birthDate, LocalDate.now()).years >= 18
     }
 
-    // Función para verificar correo @duocuc.cl
+    // --- FUNCIÓN CORREGIDA ---
+    // Función para verificar correo @duoc.cl o @profesor.duoc.cl
     private fun isDuocEmail(email: String): Boolean {
-        return email.endsWith("@duocuc.cl", ignoreCase = true) // Verifica el dominio correcto
+        // Asegura que coincida con la lógica de la UI
+        return email.endsWith("@duoc.cl", ignoreCase = true) ||
+                email.endsWith("@profesor.duoc.cl", ignoreCase = true)
     }
+    // --- FIN CORRECCIÓN ---
+
 
     fun registerUser(onRegistrationSuccess: () -> Unit) {
         // Ejecuta todas las validaciones
@@ -103,12 +108,13 @@ class RegistrationViewModel(private val userRepository: UserRepository) : ViewMo
                     contrasena = password, // ¡Considera hashear en producción!
                     // Formatea LocalDate a String "YYYY-MM-DD" para guardar
                     fechaNacimiento = fechaNacimiento!!.format(dbDateFormat),
-                    esDuoc = isDuocEmail(email)
+                    esDuoc = isDuocEmail(email) // Usa la lógica corregida
                 )
                 // Intenta insertar y verifica si tuvo éxito
                 val success = userRepository.insertUser(newUser)
                 if(success) {
-                    onRegistrationSuccess() // Llama al callback si fue exitoso
+                    // Llama al callback (que contiene el popBackStack()) si fue exitoso
+                    onRegistrationSuccess()
                 } else {
                     // Caso de conflicto (ej. email ya existe, detectado por BD)
                     emailError = "Conflicto: El correo ya existe en la base de datos."

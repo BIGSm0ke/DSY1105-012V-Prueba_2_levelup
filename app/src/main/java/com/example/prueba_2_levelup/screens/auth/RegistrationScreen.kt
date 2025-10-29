@@ -26,7 +26,7 @@ fun RegistrationScreen(
     val context = LocalContext.current
     val displayDateFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
-    // --- Configuración DatePickerDialog (sin cambios) ---
+    // --- DatePickerDialog ---
     val currentCalendar = Calendar.getInstance()
     val datePickerDialog = DatePickerDialog(
         context,
@@ -41,28 +41,23 @@ fun RegistrationScreen(
     datePickerDialog.datePicker.maxDate = System.currentTimeMillis()
     // --- Fin DatePickerDialog ---
 
-    // --- FIX 3: Envolver en Surface para el color de fondo ---
-    // Surface aplicará el color MaterialTheme.colorScheme.background.
-    // Si tu app usa el tema oscuro (Dark Theme), este fondo será negro
-    // y el texto (como "Crear Cuenta") se volverá blanco automáticamente.
+    // --- Surface para el fondo negro (del tema oscuro) ---
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize() // Rellena la Surface
+                .fillMaxSize()
                 .padding(horizontal = 32.dp, vertical = 16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            // --- Contenido de la Columna (Tu código anterior, sin cambios) ---
-
             Text("Crear Cuenta", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.height(32.dp))
 
+            // --- Definición de colores ---
             val textFieldColors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
@@ -70,6 +65,7 @@ fun RegistrationScreen(
                 cursorColor = MaterialTheme.colorScheme.primary
             )
 
+            // --- Campo Nombre ---
             OutlinedTextField(
                 value = viewModel.nombre,
                 onValueChange = { viewModel.nombre = it; viewModel.validateNombre() },
@@ -83,6 +79,7 @@ fun RegistrationScreen(
             }
             Spacer(modifier = Modifier.height(12.dp))
 
+            // --- Campo Apellido ---
             OutlinedTextField(
                 value = viewModel.apellido,
                 onValueChange = { viewModel.apellido = it; viewModel.validateApellido() },
@@ -94,6 +91,7 @@ fun RegistrationScreen(
             viewModel.apellidoError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             Spacer(modifier = Modifier.height(12.dp))
 
+            // --- Campo Email ---
             OutlinedTextField(
                 value = viewModel.email,
                 onValueChange = { viewModel.email = it; viewModel.validateEmail() },
@@ -103,11 +101,13 @@ fun RegistrationScreen(
                 colors = textFieldColors
             )
             viewModel.emailError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            // Lógica para mostrar descuento
             if (viewModel.email.endsWith("@duoc.cl", true) || viewModel.email.endsWith("@profesor.duoc.cl", true)) {
                 Text("¡Correo Duoc detectado! Recibirás 20% dcto.", color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.bodySmall)
             }
             Spacer(modifier = Modifier.height(12.dp))
 
+            // --- TextField de Fecha de Nacimiento ---
             OutlinedTextField(
                 value = viewModel.fechaNacimiento?.format(displayDateFormat) ?: "",
                 onValueChange = {},
@@ -120,6 +120,7 @@ fun RegistrationScreen(
             viewModel.fechaNacimientoError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             Spacer(modifier = Modifier.height(12.dp))
 
+            // --- Campo Password ---
             OutlinedTextField(
                 value = viewModel.password,
                 onValueChange = { viewModel.password = it; viewModel.validatePassword() },
@@ -132,6 +133,7 @@ fun RegistrationScreen(
             viewModel.passwordError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             Spacer(modifier = Modifier.height(12.dp))
 
+            // --- Campo Confirmar Password ---
             OutlinedTextField(
                 value = viewModel.confirmPassword,
                 onValueChange = { viewModel.confirmPassword = it; viewModel.validateConfirmPassword() },
@@ -149,8 +151,14 @@ fun RegistrationScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
+            // --- Botón Registrar (CON EL CAMBIO) ---
             Button(
-                onClick = { viewModel.registerUser { /* ... */ } },
+                onClick = {
+                    viewModel.registerUser {
+                        // Navega hacia atrás (a Login) SÓLO si el registro fue exitoso
+                        navController.popBackStack()
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
             ) {
@@ -158,7 +166,6 @@ fun RegistrationScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
             TextButton(onClick = { navController.popBackStack() }) { Text("¿Ya tienes cuenta? Inicia Sesión") }
-
-        } // Fin Column
-    } // Fin Surface
+        }
+    }
 }

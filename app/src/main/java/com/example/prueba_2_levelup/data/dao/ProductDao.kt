@@ -1,9 +1,11 @@
 package com.example.prueba_2_levelup.data.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.prueba_2_levelup.data.entities.ProductEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -14,6 +16,12 @@ interface ProductDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllProducts(products: List<ProductEntity>) // Para poblar la BD
+
+    @Update // <--- AÑADIR ESTO
+    suspend fun updateProduct(product: ProductEntity)
+
+    @Delete // <--- AÑADIR ESTO
+    suspend fun deleteProduct(product: ProductEntity)
 
     @Query("SELECT * FROM products ORDER BY categoria, nombre")
     fun getAllProducts(): Flow<List<ProductEntity>> // Flow para observar cambios

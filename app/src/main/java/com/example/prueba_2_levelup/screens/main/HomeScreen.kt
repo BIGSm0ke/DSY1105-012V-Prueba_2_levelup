@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Info // Placeholder for Support
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -25,7 +26,7 @@ sealed class HomeSections(val route: String, val label: String, val icon: ImageV
     object Catalog : HomeSections("catalog", "Catálogo", Icons.Filled.Home)
     object Cart : HomeSections("cart", "Carrito", Icons.Filled.ShoppingCart)
     object Profile : HomeSections("profile", "Perfil", Icons.Filled.AccountCircle)
-    object EventMap : HomeSections("event_map", "Eventos", Icons.Filled.DateRange)
+    object ProductManagement : HomeSections("product_management", "Productos", Icons.Filled.Edit)
     object Support : HomeSections("support", "Soporte", Icons.Filled.Info)
 }
 
@@ -34,7 +35,7 @@ val homeSections = listOf(
     HomeSections.Catalog,
     HomeSections.Cart,
     HomeSections.Profile,
-    HomeSections.EventMap,
+    HomeSections.ProductManagement,
     HomeSections.Support
 )
 
@@ -52,6 +53,7 @@ fun HomeScreen(
     val catalogViewModel: CatalogViewModel = viewModel(factory = factory)
     val cartViewModel: CartViewModel = viewModel(factory = factory)
     val profileViewModel: ProfileViewModel = viewModel(factory = factory)
+    val productManagementViewModel : ProductManagementViewModel = viewModel(factory = factory)
     // Añade instancias para EventMapViewModel y SupportViewModel si los creas y necesitan el factory
 
     Scaffold(
@@ -87,9 +89,8 @@ fun HomeScreen(
                     }
                 )
             }
-            composable(HomeSections.EventMap.route) {
-                // Si EventMapScreen necesita ViewModel con factory, créalo aquí
-                EventMapScreen(/* viewModel = viewModel(factory = factory) */)
+            composable(HomeSections.ProductManagement.route) {
+                ProductManagementScreen(viewModel = productManagementViewModel)
             }
             composable(HomeSections.Support.route) {
                 // Si SupportScreen necesita ViewModel con factory, créalo aquí

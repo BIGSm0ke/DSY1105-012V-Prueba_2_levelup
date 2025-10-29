@@ -32,6 +32,9 @@ class UserRepository(
     suspend fun getProductById(id: String): ProductEntity? = productDao.getProductById(id)
     suspend fun getProductCount(): Int = productDao.getProductCount()
 
+    suspend fun updateProduct(product: ProductEntity) = productDao.updateProduct(product)
+    suspend fun deleteProduct(product: ProductEntity) = productDao.deleteProduct(product)
+
     // --- Cart ---
     suspend fun addToCart(productId: String, quantity: Int = 1) {
         val existingItem = cartDao.getCartItemByProductId(productId)

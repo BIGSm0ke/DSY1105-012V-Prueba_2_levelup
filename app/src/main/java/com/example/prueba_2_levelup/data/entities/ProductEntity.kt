@@ -5,11 +5,10 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "products")
 data class ProductEntity(
-    @PrimaryKey val id: String, // "JM001", "AC001", etc.
-    val categoria: String,
+    @PrimaryKey val id: String,
     val nombre: String,
     val precio: Double,
-    val descripcion: String
-    // Podrías añadir un campo para URL de imagen si quieres mostrarlas
-    // val imageUrl: String? = null
+    val descripcion: String,
+    val categoria: String,
+    // El campo 'imageUrl' ha sido eliminado
 )
