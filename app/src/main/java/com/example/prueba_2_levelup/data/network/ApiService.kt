@@ -11,6 +11,7 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Response
 import retrofit2.Retrofit
+import com.example.prueba_2_levelup.data.network.RegistrationRequest // AÑADIR ESTO
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -32,6 +33,9 @@ interface ProductoApiService {
 
     @GET("api/usuarios/{id}")
     suspend fun getUsuarioById(@Path("id") id: Long): UsuarioDTO
+
+    @POST("api/auth/register") // Asumiendo este endpoint
+    suspend fun register(@Body request: RegistrationRequest): AuthResponse
 
     // ENDPOINTS DE PRODUCTO
     @GET("api/productos")

@@ -1,45 +1,29 @@
 package com.example.prueba_2_levelup.screens.auth
 
-import android.app.DatePickerDialog
+// ELIMINADAS: import android.app.DatePickerDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions // AÑADIDA
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType // AÑADIDA
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.prueba_2_levelup.viewModel.RegistrationViewModel
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Calendar
+// ELIMINADAS: import java.time.LocalDate, import java.time.format.DateTimeFormatter, import java.util.Calendar
 
 @Composable
 fun RegistrationScreen(
     navController: NavController,
     viewModel: RegistrationViewModel
 ) {
-    val context = LocalContext.current
-    val displayDateFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-
-    // --- DatePickerDialog ---
-    val currentCalendar = Calendar.getInstance()
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            viewModel.fechaNacimiento = LocalDate.of(year, month + 1, dayOfMonth)
-            viewModel.validateFechaNacimiento()
-        },
-        viewModel.fechaNacimiento?.year ?: currentCalendar.get(Calendar.YEAR),
-        viewModel.fechaNacimiento?.monthValue?.minus(1) ?: currentCalendar.get(Calendar.MONTH),
-        viewModel.fechaNacimiento?.dayOfMonth ?: currentCalendar.get(Calendar.DAY_OF_MONTH)
-    )
-    datePickerDialog.datePicker.maxDate = System.currentTimeMillis()
-    // --- Fin DatePickerDialog ---
+    // ELIMINADO todo el código del DatePickerDialog y manejo de fecha de nacimiento
 
     // --- Surface para el fondo negro (del tema oscuro) ---
     Surface(
@@ -91,6 +75,18 @@ fun RegistrationScreen(
             viewModel.apellidoError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             Spacer(modifier = Modifier.height(12.dp))
 
+            // --- NUEVO CAMPO: Nombre de Usuario ---
+            OutlinedTextField(
+                value = viewModel.nombreUsuario,
+                onValueChange = { viewModel.nombreUsuario = it; viewModel.validateNombreUsuario() },
+                label = { Text("Nombre de Usuario") },
+                isError = viewModel.nombreUsuarioError != null,
+                modifier = Modifier.fillMaxWidth(),
+                colors = textFieldColors
+            )
+            viewModel.nombreUsuarioError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            Spacer(modifier = Modifier.height(12.dp))
+
             // --- Campo Email ---
             OutlinedTextField(
                 value = viewModel.email,
@@ -107,17 +103,31 @@ fun RegistrationScreen(
             }
             Spacer(modifier = Modifier.height(12.dp))
 
-            // --- TextField de Fecha de Nacimiento ---
+            // --- ELIMINADO: TextField de Fecha de Nacimiento ---
+
+            // --- NUEVO CAMPO: Teléfono ---
             OutlinedTextField(
-                value = viewModel.fechaNacimiento?.format(displayDateFormat) ?: "",
-                onValueChange = {},
-                label = { Text("Fecha de Nacimiento (Click aquí)") },
-                readOnly = true,
-                isError = viewModel.fechaNacimientoError != null,
-                modifier = Modifier.fillMaxWidth().clickable { datePickerDialog.show() },
+                value = viewModel.telefono,
+                onValueChange = { viewModel.telefono = it; viewModel.validateTelefono() },
+                label = { Text("Teléfono") },
+                isError = viewModel.telefonoError != null,
+                modifier = Modifier.fillMaxWidth(),
+                colors = textFieldColors,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone) // Teclado numérico
+            )
+            viewModel.telefonoError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // --- NUEVO CAMPO: Dirección ---
+            OutlinedTextField(
+                value = viewModel.direccion,
+                onValueChange = { viewModel.direccion = it; viewModel.validateDireccion() },
+                label = { Text("Dirección") },
+                isError = viewModel.direccionError != null,
+                modifier = Modifier.fillMaxWidth(),
                 colors = textFieldColors
             )
-            viewModel.fechaNacimientoError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            viewModel.direccionError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             Spacer(modifier = Modifier.height(12.dp))
 
             // --- Campo Password ---
@@ -151,7 +161,7 @@ fun RegistrationScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // --- Botón Registrar (CON EL CAMBIO) ---
+            // --- Botón Registrar ---
             Button(
                 onClick = {
                     viewModel.registerUser {

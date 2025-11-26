@@ -21,11 +21,26 @@ class PreferencesManager(private val context: Context) {
         val USER_USERNAME = stringPreferencesKey("user_username") // NUEVA CLAVE
     }
 
-    // --- Funciones de guardado ---
+    // --- Funciones de guardado (IMPLEMENTADAS) ---
 
-    suspend fun setLoggedIn(isLoggedIn: Boolean) { /* ... */ }
-    suspend fun saveAuthToken(token: String) { /* ... */ }
-    suspend fun saveUserId(id: Long) { /* ... */ }
+    suspend fun setLoggedIn(isLoggedIn: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[IS_LOGGED_IN] = isLoggedIn
+        }
+    }
+
+    // SOLUCIÓN CLAVE: Guardar el token de autenticación
+    suspend fun saveAuthToken(token: String) {
+        context.dataStore.edit { preferences ->
+            preferences[AUTH_TOKEN] = token
+        }
+    }
+
+    suspend fun saveUserId(id: Long) {
+        context.dataStore.edit { preferences ->
+            preferences[USER_ID_LONG] = id
+        }
+    }
 
     // NUEVA FUNCIÓN: Guarda el nombre de usuario
     suspend fun saveUsername(username: String) {
@@ -41,7 +56,17 @@ class PreferencesManager(private val context: Context) {
         }
     }
 
-    suspend fun clearUserData() { /* ... */ }
+    // Limpia todos los datos de sesión (IMPLEMENTADA)
+    suspend fun clearUserData() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(IS_LOGGED_IN)
+            preferences.remove(USER_ID_LONG)
+            preferences.remove(USER_EMAIL)
+            preferences.remove(AUTH_TOKEN)
+            preferences.remove(USER_USERNAME)
+            // Alternativamente: preferences.clear() para borrar todo
+        }
+    }
 
     // --- Flujos de lectura ---
 
@@ -60,5 +85,8 @@ class PreferencesManager(private val context: Context) {
     val usernameFlow: Flow<String?> = context.dataStore.data // NUEVO FLUJO
         .map { preferences -> preferences[USER_USERNAME] }
 
-    suspend fun logout() { /* ... */ }
+    // Función de cierre de sesión (IMPLEMENTADA)
+    suspend fun logout() {
+        clearUserData()
+    }
 }

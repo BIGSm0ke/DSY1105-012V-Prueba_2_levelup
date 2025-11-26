@@ -7,42 +7,48 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.prueba_2_levelup.data.UserRepository
-import com.example.prueba_2_levelup.data.entities.UserEntity
 import kotlinx.coroutines.launch
-import java.time.LocalDate // Importar LocalDate
-import java.time.Period    // Importar Period para calcular edad
-import java.time.format.DateTimeFormatter // Importar DateTimeFormatter
+import java.lang.Exception // Asegurarse de manejar correctamente las excepciones
 
 class RegistrationViewModel(private val userRepository: UserRepository) : ViewModel() {
 
     var nombre by mutableStateOf("")
     var apellido by mutableStateOf("")
+    var nombreUsuario by mutableStateOf("") // NUEVO
     var email by mutableStateOf("")
     var password by mutableStateOf("")
     var confirmPassword by mutableStateOf("")
-    // Usar LocalDate?
-    var fechaNacimiento by mutableStateOf<LocalDate?>(null)
+    var telefono by mutableStateOf("") // NUEVO
+    var direccion by mutableStateOf("") // NUEVO
+    // ELIMINADO: var fechaNacimiento...
 
     var nombreError by mutableStateOf<String?>(null)
     var apellidoError by mutableStateOf<String?>(null)
+    var nombreUsuarioError by mutableStateOf<String?>(null) // NUEVO Error
     var emailError by mutableStateOf<String?>(null)
     var passwordError by mutableStateOf<String?>(null)
     var confirmPasswordError by mutableStateOf<String?>(null)
-    var fechaNacimientoError by mutableStateOf<String?>(null)
+    var telefonoError by mutableStateOf<String?>(null) // NUEVO Error
+    var direccionError by mutableStateOf<String?>(null) // NUEVO Error
+    // ELIMINADO: var fechaNacimientoError...
     var registrationError by mutableStateOf<String?>(null)
 
-    // Formateador estándar ISO para guardar "YYYY-MM-DD"
-    private val dbDateFormat = DateTimeFormatter.ISO_LOCAL_DATE // YYYY-MM-DD
-
     val isFormValid: Boolean
-        get() = nombreError == null && apellidoError == null && emailError == null &&
-                passwordError == null && confirmPasswordError == null && fechaNacimientoError == null &&
-                nombre.isNotBlank() && apellido.isNotBlank() && email.isNotBlank() &&
-                password.isNotBlank() && confirmPassword.isNotBlank() && fechaNacimiento != null
+        get() = nombreError == null && apellidoError == null && nombreUsuarioError == null &&
+                emailError == null && passwordError == null && confirmPasswordError == null &&
+                telefonoError == null && direccionError == null &&
+                nombre.isNotBlank() && apellido.isNotBlank() && nombreUsuario.isNotBlank() &&
+                email.isNotBlank() && password.isNotBlank() && confirmPassword.isNotBlank() &&
+                telefono.isNotBlank() && direccion.isNotBlank()
 
-    // --- Funciones de Validación ---
+
+    // --- Funciones de Validación (Actualizadas) ---
     fun validateNombre() { nombreError = if (nombre.isBlank()) "El nombre no puede estar vacío" else null }
     fun validateApellido() { apellidoError = if (apellido.isBlank()) "El apellido no puede estar vacío" else null }
+    fun validateNombreUsuario() { nombreUsuarioError = if (nombreUsuario.isBlank()) "El nombre de usuario no puede estar vacío" else null }
+    fun validateTelefono() { telefonoError = if (telefono.isBlank()) "El teléfono no puede estar vacío" else null }
+    fun validateDireccion() { direccionError = if (direccion.isBlank()) "La dirección no puede estar vacía" else null }
+
     fun validateEmail() {
         emailError = if (email.isBlank()) { "El correo no puede estar vacío" }
         else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) { "Formato de correo inválido" }
@@ -56,32 +62,12 @@ class RegistrationViewModel(private val userRepository: UserRepository) : ViewMo
     }
     fun validateConfirmPassword() { confirmPasswordError = if (confirmPassword != password) "Las contraseñas no coinciden" else null }
 
-    fun validateFechaNacimiento() {
-        fechaNacimientoError = if (fechaNacimiento == null) { "Debes seleccionar una fecha" }
-        // Usa la función isOver18 con LocalDate
-        else if (!isOver18(fechaNacimiento!!)) { "Debes ser mayor de 18 años" }
-        else null
-    }
+    // ELIMINADAS: validateFechaNacimiento(), isOver18(), isDuocEmail()
 
-    // Función isOver18 usando LocalDate y Period
-    private fun isOver18(birthDate: LocalDate): Boolean {
-        // Calcula el período entre la fecha de nacimiento y hoy, y obtiene los años
-        return Period.between(birthDate, LocalDate.now()).years >= 18
-    }
-
-    // --- FUNCIÓN CORREGIDA ---
-    // Función para verificar correo @duoc.cl o @profesor.duoc.cl
-    private fun isDuocEmail(email: String): Boolean {
-        // Asegura que coincida con la lógica de la UI
-        return email.endsWith("@duoc.cl", ignoreCase = true) ||
-                email.endsWith("@profesor.duoc.cl", ignoreCase = true)
-    }
-    // --- FIN CORRECCIÓN ---
-
-
+    // --- FUNCIÓN DE REGISTRO MODIFICADA para usar la API ---
     fun registerUser(onRegistrationSuccess: () -> Unit) {
         // Ejecuta todas las validaciones
-        validateNombre(); validateApellido(); validateEmail(); validatePassword(); validateConfirmPassword(); validateFechaNacimiento()
+        validateNombre(); validateApellido(); validateNombreUsuario(); validateEmail(); validatePassword(); validateConfirmPassword(); validateTelefono(); validateDireccion()
 
         // Si el formulario no es válido, muestra error y detiene
         if (!isFormValid) {
@@ -89,41 +75,33 @@ class RegistrationViewModel(private val userRepository: UserRepository) : ViewMo
             return
         }
 
-        // Lanza corutina para operaciones de BD
+        // Lanza corutina para operaciones de API
         viewModelScope.launch {
             registrationError = null // Limpia error previo
             try {
-                // Verifica si el correo ya existe
-                if (userRepository.getUserByEmail(email) != null) {
-                    emailError = "Este correo ya está registrado."
-                    registrationError = "Este correo ya está registrado."
-                    return@launch // Detiene si ya existe
-                }
 
-                // Crea la entidad con los datos validados
-                val newUser = UserEntity(
+                // LLAMADA A LA API DE REGISTRO a través del UserRepository
+                val authResponse = userRepository.registerUser(
+                    nombreUsuario = nombreUsuario,
+                    email = email,
+                    password = password,
                     nombre = nombre,
                     apellido = apellido,
-                    correo = email,
-                    contrasena = password, // ¡Considera hashear en producción!
-                    // Formatea LocalDate a String "YYYY-MM-DD" para guardar
-                    fechaNacimiento = fechaNacimiento!!.format(dbDateFormat),
-                    esDuoc = isDuocEmail(email) // Usa la lógica corregida
+                    telefono = telefono,
+                    direccion = direccion
                 )
-                // Intenta insertar y verifica si tuvo éxito
-                val success = userRepository.insertUser(newUser)
-                if(success) {
-                    // Llama al callback (que contiene el popBackStack()) si fue exitoso
+
+                if (authResponse != null) {
+                    // Si la API devuelve una respuesta exitosa, ejecuta el callback para navegar
                     onRegistrationSuccess()
                 } else {
-                    // Caso de conflicto (ej. email ya existe, detectado por BD)
-                    emailError = "Conflicto: El correo ya existe en la base de datos."
-                    registrationError = "Conflicto: El correo ya existe."
+                    // Manejo de error de la API (ej. nombre de usuario/email ya existe, o fallo 500)
+                    registrationError = "Error al registrar. El nombre de usuario o correo podría estar en uso, o hubo un fallo en el servidor."
                 }
 
             } catch (e: Exception) {
-                // Captura otros errores
-                registrationError = "Error inesperado al registrar: ${e.message}"
+                // Captura errores de red o inesperados
+                registrationError = "Error de conexión o inesperado al registrar: ${e.message}"
             }
         }
     }

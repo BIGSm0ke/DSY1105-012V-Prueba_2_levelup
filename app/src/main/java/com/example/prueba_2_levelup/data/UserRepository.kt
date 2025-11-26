@@ -11,6 +11,7 @@ import com.example.prueba_2_levelup.data.entities.toNetworkProduct
 import com.example.prueba_2_levelup.data.network.ProductoApiService
 import com.example.prueba_2_levelup.data.network.LoginRequest
 import com.example.prueba_2_levelup.data.network.AuthResponse
+import com.example.prueba_2_levelup.data.network.RegistrationRequest // AÑADIDO: Importar el DTO de registro
 import com.example.prueba_2_levelup.util.PreferencesManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -30,10 +31,54 @@ class UserRepository(
     // --- User (Lógica de API y Room) ---
     // ------------------------------------
 
-    suspend fun insertUser(user: UserEntity): Boolean {
-        // Usar lógica de registro local si no hay API de registro implementada
-        return userDao.insertUser(user) != -1L
+    // FUNCIÓN DE REGISTRO API (Reemplaza a insertUser de Room)
+    /**
+     * Realiza el registro del usuario usando la API de Spring Boot y realiza el auto-login.
+     */
+    suspend fun registerUser(
+        nombreUsuario: String,
+        email: String,
+        password: String,
+        nombre: String,
+        apellido: String,
+        telefono: String,
+        direccion: String
+    ): AuthResponse? { // Devuelve la respuesta para el callback de éxito
+        val request = RegistrationRequest(
+            nombreUsuario = nombreUsuario,
+            email = email,
+            password = password,
+            nombre = nombre,
+            apellido = apellido,
+            telefono = telefono,
+            direccion = direccion,
+            roles = listOf("ROL_USUARIO") // Rol por defecto (como pide el requerimiento)
+        )
+        return try {
+            val response = productoApiService.register(request)
+
+            // Auto-login: Guardar el token y los datos de perfil para iniciar sesión inmediatamente
+            preferencesManager.saveAuthToken(response.token)
+            preferencesManager.saveUserId(response.id)
+            preferencesManager.saveUsername(response.nombreUsuario)
+            preferencesManager.saveEmail(response.email)
+            preferencesManager.setLoggedIn(true) // Marcar como logeado
+
+            response
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Retorna null si hay un error de red o la API retorna un error de negocio (ej. HTTP 500)
+            null
+        }
     }
+
+    /*
+    // La antigua función insertUser (basada en Room) ha sido eliminada o comentada
+    // suspend fun insertUser(user: UserEntity): Boolean {
+    //     // Usar lógica de registro local si no hay API de registro implementada
+    //     return userDao.insertUser(user) != -1L
+    // }
+    */
 
     /**
      * Realiza el login usando la API de Spring Boot y guarda el token y los datos de perfil.
@@ -52,6 +97,9 @@ class UserRepository(
             // 3. Guardar nombre de usuario y email para la pantalla de perfil
             preferencesManager.saveUsername(response.nombreUsuario)
             preferencesManager.saveEmail(response.email)
+
+            // 4. Marcar como logeado (AÑADIDO para flujo completo)
+            preferencesManager.setLoggedIn(true)
 
             response
         } catch (e: Exception) {
