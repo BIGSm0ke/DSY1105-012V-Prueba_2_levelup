@@ -9,29 +9,31 @@ import androidx.room.Update
 import com.example.prueba_2_levelup.data.entities.ProductEntity
 import kotlinx.coroutines.flow.Flow
 
+// ... imports
+
 @Dao
 interface ProductDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE) // Reemplazar si se actualiza info del producto
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProduct(product: ProductEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAllProducts(products: List<ProductEntity>) // Para poblar la BD
+    suspend fun insertAllProducts(products: List<ProductEntity>)
 
-    @Update // <--- AÑADIR ESTO
+    @Update
     suspend fun updateProduct(product: ProductEntity)
 
-    @Delete // <--- AÑADIR ESTO
+    @Delete
     suspend fun deleteProduct(product: ProductEntity)
 
     @Query("SELECT * FROM products ORDER BY categoria, nombre")
-    fun getAllProducts(): Flow<List<ProductEntity>> // Flow para observar cambios
+    fun getAllProducts(): Flow<List<ProductEntity>>
 
     @Query("SELECT * FROM products WHERE categoria = :category ORDER BY nombre")
     fun getProductsByCategory(category: String): Flow<List<ProductEntity>>
 
     @Query("SELECT * FROM products WHERE id = :productId LIMIT 1")
-    suspend fun getProductById(productId: String): ProductEntity?
+    suspend fun getProductById(productId: Long): ProductEntity? // CAMBIO: De String a Long
 
     @Query("SELECT COUNT(*) FROM products")
-    suspend fun getProductCount(): Int // Para verificar si ya se poblaron los datos
+    suspend fun getProductCount(): Int
 }

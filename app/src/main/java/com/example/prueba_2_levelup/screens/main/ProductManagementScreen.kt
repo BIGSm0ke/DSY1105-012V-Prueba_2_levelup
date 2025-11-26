@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,6 +15,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.prueba_2_levelup.data.entities.ProductEntity
 import com.example.prueba_2_levelup.viewModel.ProductManagementViewModel
+import com.example.prueba_2_levelup.viewModel.availableCategories
 
 
 @Composable
@@ -20,6 +23,8 @@ fun ProductManagementScreen(
     viewModel: ProductManagementViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var expanded by remember { mutableStateOf(false) } // Estado para el Dropdown
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -28,24 +33,16 @@ fun ProductManagementScreen(
         cursorColor = MaterialTheme.colorScheme.primary
     )
 
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    // --- BLOQUE CORREGIDO ---
-    // (Aquí estaba el error "Smart cast")
     LaunchedEffect(key1 = uiState.userMessage) {
-        // 1. Guardamos el mensaje en una variable local
         val message = uiState.userMessage
-
-        // 2. Comprobamos la variable local (esto SÍ permite el smart-cast)
         if (message != null) {
             snackbarHostState.showSnackbar(
-                message = message, // 3. Usamos la variable local
+                message = message,
                 duration = SnackbarDuration.Short
             )
             viewModel.dismissUserMessage()
         }
     }
-    // --- FIN DEL BLOQUE CORREGIDO ---
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
@@ -58,10 +55,27 @@ fun ProductManagementScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // --- SECCIÓN 1: FORMULARIO ---
+            // --- SECCIÓN 1: FORMULARIO (CAMPOS EXTENDIDOS) ---
             item {
                 Text("Gestionar Productos", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(vertical = 16.dp))
 
+                // CAMPO: ID (solo visualización)
+                if (uiState.selectedProductId != null) {
+                    Text("ID: ${uiState.selectedProductId}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
+                }
+
+                // CAMPO: Código
+                OutlinedTextField(
+                    value = uiState.productCode,
+                    onValueChange = { viewModel.onProductCodeChange(it) },
+                    label = { Text("Código de Producto") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = textFieldColors,
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // CAMPO: Nombre
                 OutlinedTextField(
                     value = uiState.productName,
                     onValueChange = { viewModel.onProductNameChange(it) },
@@ -72,26 +86,95 @@ fun ProductManagementScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // CAMPO: Categoría (Dropdown)
+                OutlinedTextField(
+                    value = uiState.productCategory,
+                    onValueChange = {}, // No permitir edición directa
+                    label = { Text("Categoría") },
+                    readOnly = true,
+                    trailingIcon = {
+                        Icon(Icons.Filled.ArrowDropDown, contentDescription = "Dropdown", Modifier.clickable { expanded = true })
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = textFieldColors,
+                )
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier.fillMaxWidth(0.9f) // Ajustar ancho
+                ) {
+                    availableCategories.forEach { category ->
+                        DropdownMenuItem(
+                            text = { Text(category) },
+                            onClick = {
+                                viewModel.onProductCategoryChange(category)
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // CAMPO: Descripción
                 OutlinedTextField(
                     value = uiState.productDescription,
                     onValueChange = { viewModel.onProductDescriptionChange(it) },
                     label = { Text("Descripción") },
-                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp, max = 120.dp),
                     colors = textFieldColors
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedTextField(
-                    value = uiState.productPrice,
-                    onValueChange = { viewModel.onProductPriceChange(it) },
-                    label = { Text("Precio") },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = textFieldColors,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true
-                )
+                // FILA: Precio Normal y Precio Original
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    OutlinedTextField(
+                        value = uiState.productPrice,
+                        onValueChange = { viewModel.onProductPriceChange(it) },
+                        label = { Text("Precio Venta") },
+                        modifier = Modifier.weight(1f),
+                        colors = textFieldColors,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    OutlinedTextField(
+                        value = uiState.productOriginalPrice,
+                        onValueChange = { viewModel.onProductOriginalPriceChange(it) },
+                        label = { Text("Precio Original") },
+                        modifier = Modifier.weight(1f),
+                        colors = textFieldColors,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // FILA: Stock y Oferta
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = uiState.productStock,
+                        onValueChange = { viewModel.onProductStockChange(it) },
+                        label = { Text("Stock") },
+                        modifier = Modifier.weight(1f),
+                        colors = textFieldColors,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = uiState.isOffer,
+                            onCheckedChange = { viewModel.onIsOfferChange(it) }
+                        )
+                        Text("En Oferta", style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // --- BOTONES ---
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
@@ -136,7 +219,7 @@ fun ProductManagementScreen(
                     Text("No hay productos creados.", modifier = Modifier.padding(16.dp))
                 }
             } else {
-                items(uiState.products) { product ->
+                items(uiState.products, key = { it.id }) { product ->
                     ProductListItem(
                         product = product,
                         onClick = {
@@ -161,9 +244,18 @@ fun ProductListItem(product: ProductEntity, onClick: () -> Unit) {
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(product.nombre, style = MaterialTheme.typography.titleMedium)
+            Text("Categoría: ${product.categoria} | Stock: ${product.stock}", style = MaterialTheme.typography.bodySmall)
             Text(product.descripcion, style = MaterialTheme.typography.bodySmall, maxLines = 2)
         }
         Spacer(modifier = Modifier.width(16.dp))
-        Text("$${product.precio}", style = MaterialTheme.typography.titleMedium)
+        // Mostrar precio original si está en oferta
+        Column(horizontalAlignment = Alignment.End) {
+            if (product.oferta && product.precioOriginal != null) {
+                Text("$${product.precioOriginal}", style = MaterialTheme.typography.bodySmall.copy(
+                    // Aquí se usaría un estilo tachado, se simula con color para simplicidad
+                ), color = MaterialTheme.colorScheme.error)
+            }
+            Text("$${product.precio}", style = MaterialTheme.typography.titleMedium)
+        }
     }
 }

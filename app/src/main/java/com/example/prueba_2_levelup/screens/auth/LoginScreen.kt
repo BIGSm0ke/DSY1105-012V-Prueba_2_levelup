@@ -1,13 +1,26 @@
 package com.example.prueba_2_levelup.screens.auth
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.prueba_2_levelup.R
+import com.example.prueba_2_levelup.ui.theme.Orbitron
 import com.example.prueba_2_levelup.viewModel.LoginViewModel
 
 @Composable
@@ -15,81 +28,125 @@ fun LoginScreen(
     navController: NavController,
     viewModel: LoginViewModel
 ) {
-    // --- FIX 1: Envolver en Surface para aplicar el fondo negro ---
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Manejar la navegación después del login exitoso
+    LaunchedEffect(uiState.isLoggedIn) {
+        if (uiState.isLoggedIn) {
+            navController.navigate("home") {
+                // Limpia la pila de navegación para que el usuario no pueda volver al login
+                popUpTo("login") { inclusive = true }
+            }
+        }
+    }
+
+    // Manejar mensajes del usuario (éxito/error)
+    LaunchedEffect(uiState.userMessage) {
+        val message = uiState.userMessage
+        if (message != null) {
+            snackbarHostState.showSnackbar(
+                message = message,
+                duration = SnackbarDuration.Short
+            )
+            viewModel.dismissUserMessage()
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 32.dp, vertical = 16.dp), // Padding
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(padding)
+                .background(MaterialTheme.colorScheme.background),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            // Título con fuente Orbitron (aplicado por el tema)
-            Text("LEVEL-UP GAMER", style = MaterialTheme.typography.headlineMedium)
-            Spacer(modifier = Modifier.height(48.dp))
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .padding(16.dp),
+                shape = RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // BLOQUE COMENTADO PARA EVITAR EL CRASH POR RECURSO NO SOPORTADO
+                    /*
+                    Image(
+                        painter = painterResource(id = R.mipmap.ic_launcher),
+                        contentDescription = "Logo",
+                        modifier = Modifier.size(96.dp).padding(bottom = 16.dp)
+                    )
+                    */
+                    // Se agrega un Spacer para reemplazar el espacio ocupado por el logo
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            // --- FIX 2: Definir los colores una sola vez ---
-            // (Estos son los mismos colores que ya tenías, pero en una variable)
-            val textFieldColors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = MaterialTheme.colorScheme.onBackground, // Texto al escribir (Blanco)
-                unfocusedTextColor = MaterialTheme.colorScheme.onBackground, // Texto sin foco (Blanco)
-                cursorColor = MaterialTheme.colorScheme.primary, // Cursor (Azul Eléctrico)
-                focusedBorderColor = MaterialTheme.colorScheme.primary, // Borde con foco (Azul Eléctrico)
-                unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), // Borde sin foco (Gris Oscuro Semi-Transparente)
-                focusedLabelColor = MaterialTheme.colorScheme.primary, // Etiqueta con foco (Azul Eléctrico)
-                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant // Etiqueta sin foco (Gris Claro)
-            )
-            // --- Fin FIX 2 ---
+                    Text(
+                        text = "LEVEL UP",
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = Orbitron
+                        ),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
 
-            // --- Campos de texto ---
-            OutlinedTextField(
-                value = viewModel.email,
-                onValueChange = { viewModel.email = it },
-                label = { Text("Correo Electrónico") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = textFieldColors // Aplicamos la variable
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = viewModel.password,
-                onValueChange = { viewModel.password = it },
-                label = { Text("Contraseña") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                colors = textFieldColors // Aplicamos la variable
-            )
-            Spacer(modifier = Modifier.height(24.dp))
+                    // Campo de Usuario
+                    OutlinedTextField(
+                        value = uiState.username,
+                        onValueChange = { viewModel.onUsernameChange(it) },
+                        label = { Text("Usuario / Email") },
+                        leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            // Mostrar error de login si existe
-            viewModel.loginError?.let { error ->
-                Text(error, color = MaterialTheme.colorScheme.error) // Rojo
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+                    // Campo de Contraseña
+                    OutlinedTextField(
+                        value = uiState.password,
+                        onValueChange = { viewModel.onPasswordChange(it) },
+                        label = { Text("Contraseña") },
+                        leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
 
-            // Botón principal con color primario (Azul Eléctrico)
-            Button(
-                onClick = {
-                    viewModel.attemptLogin { userId, nombre, apellido ->
-                        navController.navigate("home") {
-                            popUpTo("login") { inclusive = true }
+                    Button(
+                        onClick = { viewModel.login() },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        enabled = !uiState.isLoading,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        } else {
+                            Text("INICIAR SESIÓN", fontWeight = FontWeight.Bold)
                         }
                     }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary) // Azul
-            ) {
-                // Texto del botón usará onPrimary (Blanco)
-                Text("Iniciar Sesión", style = MaterialTheme.typography.labelLarge)
-            }
-            Spacer(modifier = Modifier.height(16.dp))
 
-            // Botón secundario (TextButton) usará color primario (Azul Eléctrico) por defecto
-            TextButton(onClick = { navController.navigate("registration") }) {
-                Text("¿No tienes cuenta? Regístrate")
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    TextButton(
+                        onClick = { navController.navigate("registration") },
+                        enabled = !uiState.isLoading
+                    ) {
+                        Text("¿No tienes cuenta? Regístrate aquí.")
+                    }
+                }
             }
         }
-    } // --- Fin Surface (FIX 1) ---
+    }
 }

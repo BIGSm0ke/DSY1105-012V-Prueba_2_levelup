@@ -8,9 +8,9 @@ import androidx.compose.material.icons.filled.DateRange // Placeholder for Map/E
 import androidx.compose.material.icons.filled.Home // Placeholder for Catalog
 import androidx.compose.material.icons.filled.Info // Placeholder for Support
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -18,83 +18,77 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
-import com.example.prueba_2_levelup.util.PreferencesManager // Importa PreferencesManager
-import com.example.prueba_2_levelup.viewModel.* // Importa todos tus ViewModels y el Factory
+import com.example.prueba_2_levelup.util.PreferencesManager
+import com.example.prueba_2_levelup.viewModel.* import com.example.prueba_2_levelup.viewModel.ViewModelFactory
 
 // Define las rutas internas de la Home
 sealed class HomeSections(val route: String, val label: String, val icon: ImageVector) {
     object Catalog : HomeSections("catalog", "Catálogo", Icons.Filled.Home)
     object Cart : HomeSections("cart", "Carrito", Icons.Filled.ShoppingCart)
-    object Profile : HomeSections("profile", "Perfil", Icons.Filled.AccountCircle)
+    // Profile fue eliminado para evitar la redirección automática.
     object ProductManagement : HomeSections("product_management", "Productos", Icons.Filled.Edit)
-    object Support : HomeSections("support", "Soporte", Icons.Filled.Info)
+    object Support : HomeSections("support", "Sesión", Icons.Filled.Info) // Renombrado para reflejar la función de Logout
 }
 
-// Lista de secciones para la barra de navegación
+// Lista de secciones para la barra de navegación (SIN PERFIL)
 val homeSections = listOf(
     HomeSections.Catalog,
     HomeSections.Cart,
-    HomeSections.Profile,
     HomeSections.ProductManagement,
     HomeSections.Support
 )
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter") // El padding se usa en el NavHost interno
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun HomeScreen(
-    factory: ViewModelFactory, // Recibe el Factory para crear ViewModels
-    preferencesManager: PreferencesManager, // Podría ser necesario para alguna lógica directa
-    mainNavController: NavHostController // El controlador principal para logout
+    factory: ViewModelFactory,
+    preferencesManager: PreferencesManager,
+    mainNavController: NavHostController // El controlador principal (para salir al Login)
 ) {
-    // Controlador de navegación *interno* para las secciones de Home
     val homeNavController = rememberNavController()
 
     // --- Instancia tus ViewModels usando el Factory ---
     val catalogViewModel: CatalogViewModel = viewModel(factory = factory)
     val cartViewModel: CartViewModel = viewModel(factory = factory)
-    val profileViewModel: ProfileViewModel = viewModel(factory = factory)
+    val profileViewModel: ProfileViewModel = viewModel(factory = factory) // Contiene la lógica de logout
     val productManagementViewModel : ProductManagementViewModel = viewModel(factory = factory)
-    // Añade instancias para EventMapViewModel y SupportViewModel si los creas y necesitan el factory
 
     Scaffold(
         bottomBar = {
-            // Barra de navegación inferior
             BottomNavigationBar(navController = homeNavController)
         }
     ) { innerPadding ->
-        // NavHost *interno* que ocupa el espacio del Scaffold
         NavHost(
             navController = homeNavController,
-            startDestination = HomeSections.Catalog.route, // Empieza en el Catálogo
-            modifier = Modifier.padding(innerPadding) // Aplica el padding del Scaffold
+            startDestination = HomeSections.Catalog.route,
+            modifier = Modifier.padding(innerPadding)
         ) {
-            // Define qué pantalla mostrar para cada ruta interna
+
             composable(HomeSections.Catalog.route) {
-                CatalogScreen(
-                    viewModel = catalogViewModel,
-                    // onProductClick = { productId -> /* Navegar a detalle si lo implementas */ }
-                )
+                CatalogScreen(viewModel = catalogViewModel)
             }
+
             composable(HomeSections.Cart.route) {
                 CartScreen(viewModel = cartViewModel)
             }
-            composable(HomeSections.Profile.route) {
-                ProfileScreen(
-                    viewModel = profileViewModel,
-                    onLogout = {
-                        // Usa el controlador principal para volver al Login
-                        mainNavController.navigate("login") {
-                            popUpTo("home") { inclusive = true } // Limpia la pila hasta Home
-                        }
-                    }
-                )
-            }
+
+            // La ruta Profile (HomeSections.Profile.route) ha sido eliminada del NavHost.
+
             composable(HomeSections.ProductManagement.route) {
                 ProductManagementScreen(viewModel = productManagementViewModel)
             }
+
             composable(HomeSections.Support.route) {
-                // Si SupportScreen necesita ViewModel con factory, créalo aquí
-                SupportScreen(/* viewModel = viewModel(factory = factory) */)
+                SupportScreen(
+                    viewModel = profileViewModel,
+                    // CORRECCIÓN CLAVE: Definir la acción de navegación que usa el mainNavController
+                    onLogoutSuccess = {
+                        mainNavController.navigate("login") {
+                            // Limpia la pila de navegación de Home y va al Login
+                            popUpTo("home") { inclusive = true }
+                        }
+                    }
+                )
             }
         }
     }
@@ -104,27 +98,20 @@ fun HomeScreen(
 @Composable
 fun BottomNavigationBar(navController: NavHostController) {
     NavigationBar {
-        // Obtiene la entrada actual de la pila de navegación para saber qué item resaltar
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry?.destination
 
-        // Itera sobre las secciones definidas
         homeSections.forEach { section ->
             NavigationBarItem(
-                icon = { Icon(section.icon, contentDescription = section.label) }, // Ícono de la sección
-                label = { Text(section.label) }, // Texto de la sección
-                // Determina si esta sección es la actualmente seleccionada
+                icon = { Icon(section.icon, contentDescription = section.label) },
+                label = { Text(section.label) },
                 selected = currentDestination?.hierarchy?.any { it.route == section.route } == true,
-                // Acción al hacer clic en un item de la barra
                 onClick = {
                     navController.navigate(section.route) {
-                        // Vuelve al inicio del gráfico de navegación para evitar acumular pantallas
                         popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true // Guarda el estado de la pantalla al salir
+                            saveState = true
                         }
-                        // Evita lanzar la misma pantalla múltiples veces si se presiona rápido
                         launchSingleTop = true
-                        // Restaura el estado guardado al volver a una pantalla
                         restoreState = true
                     }
                 }

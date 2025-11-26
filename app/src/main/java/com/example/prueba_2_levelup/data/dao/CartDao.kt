@@ -32,7 +32,7 @@ interface CartDao {
 
     // Obtiene un CartItem por el ID del producto (para ver si ya existe)
     @Query("SELECT * FROM cart_items WHERE productId = :productId LIMIT 1")
-    suspend fun getCartItemByProductId(productId: String): CartItemEntity?
+    suspend fun getCartItemByProductId(productId: Long): CartItemEntity?
 
     // Obtiene un CartItem por su propio ID (para actualizar cantidad o borrar)
     @Query("SELECT * FROM cart_items WHERE id = :itemId LIMIT 1")

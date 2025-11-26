@@ -10,11 +10,11 @@ import androidx.room.PrimaryKey
         entity = ProductEntity::class,
         parentColumns = ["id"],
         childColumns = ["productId"],
-        onDelete = ForeignKey.CASCADE // Si se borra un producto, se borra del carrito
+        onDelete = ForeignKey.CASCADE
     )]
 )
 data class CartItemEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val productId: String, // Clave foránea a ProductEntity
+    val productId: Long, // CAMBIO CRÍTICO: De String a Long
     var quantity: Int
 )

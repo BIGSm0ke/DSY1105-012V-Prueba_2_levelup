@@ -3,60 +3,62 @@ package com.example.prueba_2_levelup.util
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-// Extensión para crear el DataStore
 val Context.dataStore by preferencesDataStore(name = "user_prefs")
 
 class PreferencesManager(private val context: Context) {
 
     companion object {
-        // Claves para guardar los datos
         val IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
-        val USER_ID = intPreferencesKey("user_id") // Guardar ID para saber quién es
+        val USER_ID_LONG = longPreferencesKey("user_id_long")
         val USER_EMAIL = stringPreferencesKey("user_email")
-        // Podrías guardar nombre/apellido aquí o recuperarlos de la BD usando el ID
+        val AUTH_TOKEN = stringPreferencesKey("auth_token")
+        val USER_USERNAME = stringPreferencesKey("user_username") // NUEVA CLAVE
     }
 
-    // Guarda el estado de login y datos básicos del usuario
-    suspend fun saveLoginState(isLoggedIn: Boolean, userId: Int = -1, email: String = "") {
+    // --- Funciones de guardado ---
+
+    suspend fun setLoggedIn(isLoggedIn: Boolean) { /* ... */ }
+    suspend fun saveAuthToken(token: String) { /* ... */ }
+    suspend fun saveUserId(id: Long) { /* ... */ }
+
+    // NUEVA FUNCIÓN: Guarda el nombre de usuario
+    suspend fun saveUsername(username: String) {
         context.dataStore.edit { preferences ->
-            preferences[IS_LOGGED_IN] = isLoggedIn
-            if (isLoggedIn) {
-                preferences[USER_ID] = userId
-                preferences[USER_EMAIL] = email
-            } else {
-                // Si cierra sesión, limpiamos los datos
-                preferences.remove(USER_ID)
-                preferences.remove(USER_EMAIL)
-            }
+            preferences[USER_USERNAME] = username
         }
     }
 
-    // Flujo para saber si el usuario está logueado
+    // NUEVA FUNCIÓN: Guarda el email (actualizamos la existente si era necesario)
+    suspend fun saveEmail(email: String) {
+        context.dataStore.edit { preferences ->
+            preferences[USER_EMAIL] = email
+        }
+    }
+
+    suspend fun clearUserData() { /* ... */ }
+
+    // --- Flujos de lectura ---
+
     val isLoggedInFlow: Flow<Boolean> = context.dataStore.data
-        .map { preferences ->
-            preferences[IS_LOGGED_IN] ?: false
-        }
+        .map { preferences -> preferences[IS_LOGGED_IN] ?: false }
 
-    // Flujo para obtener el ID del usuario actual (si está logueado)
-    val userIdFlow: Flow<Int?> = context.dataStore.data
-        .map { preferences ->
-            preferences[USER_ID]
-        }
+    val authTokenFlow: Flow<String?> = context.dataStore.data
+        .map { preferences -> preferences[AUTH_TOKEN] }
 
-    // Flujo para obtener el email del usuario actual (si está logueado)
+    val userIdFlow: Flow<Long?> = context.dataStore.data
+        .map { preferences -> preferences[USER_ID_LONG] }
+
     val userEmailFlow: Flow<String?> = context.dataStore.data
-        .map { preferences ->
-            preferences[USER_EMAIL]
-        }
+        .map { preferences -> preferences[USER_EMAIL] }
 
-    // Función específica para logout
-    suspend fun logout() {
-        saveLoginState(false)
-    }
+    val usernameFlow: Flow<String?> = context.dataStore.data // NUEVO FLUJO
+        .map { preferences -> preferences[USER_USERNAME] }
+
+    suspend fun logout() { /* ... */ }
 }

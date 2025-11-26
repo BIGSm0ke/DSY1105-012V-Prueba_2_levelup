@@ -1,85 +1,48 @@
 package com.example.prueba_2_levelup.screens.main
 
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info // Ícono de información
-import androidx.compose.material.icons.filled.Send // Ícono alternativo
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.prueba_2_levelup.viewModel.ProfileViewModel
 
 @Composable
-fun SupportScreen() {
-    val context = LocalContext.current
-    // IMPORTANTE: Reemplaza este número!
-    val supportPhoneNumber = "56912345678" // Incluye código de país
-
-    // Fondo negro, texto blanco por el tema
+fun SupportScreen(
+    viewModel: ProfileViewModel,
+    onLogoutSuccess: () -> Unit // NUEVA LAMBDA: Se llama después de borrar el token
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp), // Más padding general
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Ícono grande Verde Neón
-        Icon(
-            Icons.Filled.Info, // O Icons.Filled.SupportAgent, etc.
-            contentDescription = "Soporte",
-            modifier = Modifier.size(80.dp), // Más grande
-            tint = MaterialTheme.colorScheme.secondary // Verde Neón
-        )
-        Spacer(modifier = Modifier.height(24.dp))
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Soporte Técnico", style = MaterialTheme.typography.headlineMedium)
+            Spacer(modifier = Modifier.height(32.dp))
+            Text("Para asistencia, por favor contacte a:", style = MaterialTheme.typography.bodyLarge)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("soporte@levelup.com", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(32.dp))
+        }
 
-        // Título con Orbitron
-        Text(
-            "Soporte Técnico",
-            style = MaterialTheme.typography.headlineMedium // Orbitron
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Texto con Roboto Regular, Gris Claro
-        Text(
-            "¿Necesitas ayuda? Contáctanos directamente a través de WhatsApp.",
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant // Gris Claro
-        )
-        Spacer(modifier = Modifier.height(40.dp))
-
-        // Botón Azul Eléctrico
+        // --- Botón de Cerrar Sesión ---
         Button(
-            onClick = {
-                openWhatsAppChat(context, supportPhoneNumber)
-            },
-            modifier = Modifier.fillMaxWidth(0.9f), // Un poco más ancho
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary) // Azul
+            // Al hacer clic, primero llamamos al logout del ViewModel
+            onClick = { viewModel.logout(); onLogoutSuccess() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
         ) {
-            // Icon(Icons.Filled.Send, contentDescription = "WhatsApp") // Ícono opcional
-            // Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-            // Texto del botón Blanco
-            Text("Contactar por WhatsApp", style = MaterialTheme.typography.labelLarge)
+            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar sesión")
+            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+            Text("Cerrar Sesión")
         }
-    }
-}
-
-// Función auxiliar para abrir WhatsApp (sin cambios)
-fun openWhatsAppChat(context: Context, phoneNumber: String) {
-    val url = "https://api.whatsapp.com/send?phone=$phoneNumber"
-    try {
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse(url)
-        }
-        context.startActivity(intent)
-    } catch (e: Exception) {
-        Toast.makeText(context, "No se pudo abrir WhatsApp. ¿Está instalado?", Toast.LENGTH_LONG).show()
     }
 }

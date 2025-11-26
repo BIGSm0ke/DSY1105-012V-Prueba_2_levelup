@@ -61,6 +61,16 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    implementation(libs.androidx.core.ktx)
+
+    val retrofit_version = "2.9.0"
+    val moshi_version = "1.15.0"
+    implementation("com.squareup.retrofit2:retrofit:$retrofit_version")
+    implementation("com.squareup.retrofit2:converter-moshi:$retrofit_version")
+    implementation("com.squareup.moshi:moshi-kotlin:$moshi_version")
+    ksp("com.squareup.moshi:moshi-kotlin-codegen:$moshi_version")
+
     // Room (Base de datos)
     val room_version = "2.6.1" // Definimos la versión aquí
     implementation("androidx.room:room-runtime:$room_version")
@@ -70,6 +80,8 @@ dependencies {
     // Mapas
     implementation("com.google.maps.android:maps-compose:4.4.1")
     implementation("com.google.android.gms:play-services-maps:19.0.0")
+
+
 
     // Dependencias de Test (usando alias del .toml)
     testImplementation(libs.junit)

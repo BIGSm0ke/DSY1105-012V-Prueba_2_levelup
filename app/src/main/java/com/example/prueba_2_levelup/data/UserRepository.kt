@@ -6,37 +6,136 @@ import com.example.prueba_2_levelup.data.dao.UserDao
 import com.example.prueba_2_levelup.data.entities.CartItemEntity
 import com.example.prueba_2_levelup.data.entities.ProductEntity
 import com.example.prueba_2_levelup.data.entities.UserEntity
+import com.example.prueba_2_levelup.data.entities.toEntity
+import com.example.prueba_2_levelup.data.entities.toNetworkProduct
+import com.example.prueba_2_levelup.data.network.ProductoApiService
+import com.example.prueba_2_levelup.data.network.LoginRequest
+import com.example.prueba_2_levelup.data.network.AuthResponse
+import com.example.prueba_2_levelup.util.PreferencesManager
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull // Importar para obtener el valor del Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.firstOrNull
+import java.io.IOException
 
-// Repositorio centraliza el acceso a los DAOs
 class UserRepository(
     private val userDao: UserDao,
     private val productDao: ProductDao,
-    private val cartDao: CartDao
+    private val cartDao: CartDao,
+    // DEPENDENCIAS PARA LA INTEGRACIÓN DE LA API Y SESIÓN
+    private val preferencesManager: PreferencesManager,
+    private val productoApiService: ProductoApiService
 ) {
 
-    // --- User ---
+    // ------------------------------------
+    // --- User (Lógica de API y Room) ---
+    // ------------------------------------
+
     suspend fun insertUser(user: UserEntity): Boolean {
+        // Usar lógica de registro local si no hay API de registro implementada
         return userDao.insertUser(user) != -1L
     }
+
+    /**
+     * Realiza el login usando la API de Spring Boot y guarda el token y los datos de perfil.
+     */
+    suspend fun login(nombreUsuario: String, pass: String): AuthResponse? {
+        val request = LoginRequest(nombreUsuario, pass)
+        return try {
+            val response = productoApiService.login(request)
+
+            // 1. Guardar el token para el Interceptor (seguridad)
+            preferencesManager.saveAuthToken(response.token)
+
+            // 2. Guardar el ID (Long)
+            preferencesManager.saveUserId(response.id)
+
+            // 3. Guardar nombre de usuario y email para la pantalla de perfil
+            preferencesManager.saveUsername(response.nombreUsuario)
+            preferencesManager.saveEmail(response.email)
+
+            response
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    // Método getProfileData ELIMINADO: La información del perfil se lee ahora desde PreferencesManager.
+
     suspend fun getUserByEmail(email: String): UserEntity? = userDao.getUserByEmail(email)
-    suspend fun login(email: String, pass: String): UserEntity? = userDao.getUserByCredentials(email, pass)
     suspend fun addPoints(userId: Int, points: Int) = userDao.addPoints(userId, points)
 
-    // --- Product ---
-    suspend fun insertProduct(product: ProductEntity) = productDao.insertProduct(product)
+
+    // ------------------------------------
+    // --- Product (Lógica de API y Room como Caché) ---
+    // ------------------------------------
+
+    // GET ALL: Obtiene productos de la API
+    fun getProductsFromApi(): Flow<List<ProductEntity>> = flow {
+        try {
+            val networkProducts = productoApiService.getProductos()
+            val productEntities = networkProducts.map { it.toEntity() }
+
+            productDao.insertAllProducts(productEntities)
+
+            emit(productEntities)
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
+    // POST/INSERTAR (API + Room)
+    suspend fun insertProduct(product: ProductEntity): ProductEntity {
+        val networkProduct = product.toNetworkProduct()
+        val createdNetworkProduct = productoApiService.crearProducto(networkProduct)
+
+        val createdEntity = createdNetworkProduct.toEntity()
+        productDao.insertProduct(createdEntity)
+        return createdEntity
+    }
+
+    // PUT/ACTUALIZAR (API + Room)
+    suspend fun updateProduct(product: ProductEntity) {
+        val networkProduct = product.toNetworkProduct()
+        val apiId = product.id
+
+        if (apiId == 0L) {
+            throw IllegalStateException("No se pudo obtener un ID Long válido para actualizar.")
+        }
+
+        val updatedNetworkProduct = productoApiService.actualizarProducto(apiId, networkProduct)
+
+        val updatedEntity = updatedNetworkProduct.toEntity()
+        productDao.updateProduct(updatedEntity)
+    }
+
+    // DELETE/ELIMINAR (API + Room)
+    suspend fun deleteProduct(product: ProductEntity) {
+        val apiId = product.id
+
+        if (apiId == 0L) {
+            throw IllegalStateException("No se pudo obtener un ID Long válido para eliminar.")
+        }
+
+        productoApiService.eliminarProducto(apiId)
+
+        productDao.deleteProduct(product)
+    }
+
+    // --- Product (Métodos Locales para compatibilidad y caché) ---
     suspend fun insertAllProducts(products: List<ProductEntity>) = productDao.insertAllProducts(products)
     fun getAllProducts(): Flow<List<ProductEntity>> = productDao.getAllProducts()
     fun getProductsByCategory(category: String): Flow<List<ProductEntity>> = productDao.getProductsByCategory(category)
-    suspend fun getProductById(id: String): ProductEntity? = productDao.getProductById(id)
+    suspend fun getProductById(id: Long): ProductEntity? = productDao.getProductById(id)
     suspend fun getProductCount(): Int = productDao.getProductCount()
 
-    suspend fun updateProduct(product: ProductEntity) = productDao.updateProduct(product)
-    suspend fun deleteProduct(product: ProductEntity) = productDao.deleteProduct(product)
 
-    // --- Cart ---
-    suspend fun addToCart(productId: String, quantity: Int = 1) {
+    // ------------------------------------
+    // --- Cart (Lógica Local) ---
+    // ------------------------------------
+
+    // productId usa Long
+    suspend fun addToCart(productId: Long, quantity: Int = 1) {
         val existingItem = cartDao.getCartItemByProductId(productId)
         if (existingItem != null) {
             existingItem.quantity += quantity
@@ -46,25 +145,20 @@ class UserRepository(
         }
     }
 
-    // --- CORRECCIÓN AQUÍ ---
     suspend fun updateCartItemQuantity(itemId: Int, newQuantity: Int) {
-        // Necesitamos una función en CartDao para obtener un item por su ID
-        // Asumamos que creamos: suspend fun getCartItemById(id: Int): CartItemEntity?
-        val item = cartDao.getCartItemById(itemId) // Llama a la nueva función (que debes crear en CartDao)
+        // Asumiendo que CartDao tiene getCartItemById(itemId: Int)
+        val item = cartDao.getCartItemById(itemId)
         if (item != null) {
             if (newQuantity > 0) {
                 item.quantity = newQuantity
-                cartDao.updateCartItem(item) // Actualiza el item en la BD
+                cartDao.updateCartItem(item)
             } else {
-                // Si la nueva cantidad es 0 o menos, eliminamos el item
                 removeFromCart(itemId)
             }
         }
-        // Puedes añadir manejo de errores si item es null
     }
-    // --- FIN CORRECCIÓN ---
 
     suspend fun removeFromCart(itemId: Int) = cartDao.deleteCartItemById(itemId)
-    fun getCartItems() = cartDao.getCartItemsWithProductInfo() // Usar el que trae info del producto
+    fun getCartItems() = cartDao.getCartItemsWithProductInfo()
     suspend fun clearCart() = cartDao.clearCart()
 }
