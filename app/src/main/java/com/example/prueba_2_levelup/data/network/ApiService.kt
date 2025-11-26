@@ -34,7 +34,7 @@ interface ProductoApiService {
     @GET("api/usuarios/{id}")
     suspend fun getUsuarioById(@Path("id") id: Long): UsuarioDTO
 
-    @POST("api/auth/register") // Asumiendo este endpoint
+    @POST("api/auth/registro")
     suspend fun register(@Body request: RegistrationRequest): AuthResponse
 
     // ENDPOINTS DE PRODUCTO
